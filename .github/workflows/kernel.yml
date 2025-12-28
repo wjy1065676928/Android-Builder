@@ -201,6 +201,9 @@ jobs:
           CC=$(echo $PARAMS | jq -r ".CC")
 
           args="-j${{ env.THREAD }} O=${{ env.OUT_DIR }} ARCH=$ARCH"
+
+          args="$args LLVM=1 LLVM_IAS=1 LD=ld.lld AR=llvm-ar NM=llvm-nm STRIP=llvm-strip"
+          
           if [ -n "$CC" ]; then
 
             if [[ "$CC" == *"/"* ]]; then
