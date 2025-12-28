@@ -22,13 +22,7 @@
       "externalCommands": {
         "CROSS_COMPILE": "proton-clang/bin/aarch64-linux-gnu-",
         "CROSS_COMPILE_ARM32": "proton-clang/bin/arm-linux-gnueabi-",
-        "CLANG_TRIPLE": "aarch64-linux-gnu-",
-        "LLVM": "1",
-        "LLVM_IAS": "1",
-        "LD": "ld.lld",
-        "AR": "llvm-ar",
-        "NM": "llvm-nm",
-        "STRIP": "llvm-strip"
+        "CLANG_TRIPLE": "aarch64-linux-gnu-"
       }
     },
     "AnyKernel3": {
