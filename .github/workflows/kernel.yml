@@ -202,8 +202,8 @@ jobs:
 
           args="-j${{ env.THREAD }} O=${{ env.OUT_DIR }} ARCH=$ARCH"
 
-          args="$args LLVM=1 LLVM_IAS=1 LD=ld.lld AR=llvm-ar NM=llvm-nm STRIP=llvm-strip"
-          
+          args="$args LLVM=1 LLVM_IAS=1 LD=ld.lld AR=llvm-ar NM=llvm-nm STRIP=llvm-strip HOSTCC=gcc HOSTCXX=g++ HOSTLD=ld.lld"
+
           if [ -n "$CC" ]; then
 
             if [[ "$CC" == *"/"* ]]; then
