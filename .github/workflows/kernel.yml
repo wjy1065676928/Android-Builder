@@ -202,7 +202,7 @@ jobs:
 
           args="-j${{ env.THREAD }} O=${{ env.OUT_DIR }} ARCH=$ARCH"
 
-          args="$args LLVM=1 LLVM_IAS=1 HOSTCC=gcc HOSTLD=ld"
+          args="$args LLVM=1 LLVM_IAS=1 HOSTCC=gcc LD=/usr/bin/ld"
 
           if [ -n "$CC" ]; then
 
