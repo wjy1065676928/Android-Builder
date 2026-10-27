@@ -78,7 +78,8 @@ jobs:
           sudo apt-get clean || true
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile
-          sudo fallocate -l 8G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=none
+          # Android 14 底座的 soong 分析约 10G，4G swap 足够；留更多磁盘给 out
+          sudo fallocate -l 4G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096 status=none
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile >/dev/null
           sudo swapon /swapfile
@@ -148,8 +149,25 @@ jobs:
               "$DEVICE_REPO" "$SRC_ROOT/$DEVICE_LOCATION"
           fi
 
-      - name: ♌ Apply device patches
+      - name: ♌ Adapt device tree
         run: |
+          DEVICE_DIR="$SRC_ROOT/$DEVICE_LOCATION"
+          if [ -f "$DEVICE_DIR/device.mk" ]; then
+            cd "$DEVICE_DIR"
+            # 该树按 Android 15 写 PRODUCT_SHIPPING_API_LEVEL=35，
+            # 而 OrangeFox 14.1 底座的 BOARD_SYSTEMSDK_VERSIONS 是 34，
+            # board_config.mk 要求 PRODUCT_SHIPPING_API_LEVEL <= SYSTEMSDK，否则直接 error。
+            if grep -q '^PRODUCT_SHIPPING_API_LEVEL := 35' device.mk; then
+              sed -i 's/^PRODUCT_SHIPPING_API_LEVEL := 35/PRODUCT_SHIPPING_API_LEVEL := 34/' device.mk
+              echo "[fix] PRODUCT_SHIPPING_API_LEVEL 35 -> 34"
+            fi
+            # com.android.crashrecovery APEX 在 Android 14 底座上不存在
+            if grep -q '^PRODUCT_APEX_SYSTEM_SERVER_JARS += com.android.crashrecovery' device.mk; then
+              sed -i 's|^PRODUCT_APEX_SYSTEM_SERVER_JARS += com.android.crashrecovery|# &|' device.mk
+              echo "[fix] disabled PRODUCT_APEX_SYSTEM_SERVER_JARS (no crashrecovery APEX on 14.1)"
+            fi
+            grep -nE 'PRODUCT_SHIPPING_API_LEVEL|PRODUCT_APEX_SYSTEM_SERVER_JARS' device.mk || true
+          fi
           if [ -n "$DEVICE_PATCH_SCRIPT" ] && [ -f "$TREE_ROOT/$DEVICE_PATCH_SCRIPT" ]; then
             cd "$SRC_ROOT"
             bash "$TREE_ROOT/$DEVICE_PATCH_SCRIPT" "$SRC_ROOT" "$DEVICE_NAME"
@@ -168,7 +186,7 @@ jobs:
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           SELECTED=""
-          for variant in "${DEVICE_MAKEFILE}-eng" "${DEVICE_MAKEFILE}-bp2a-eng" "${DEVICE_MAKEFILE}-ap2a-eng" "${DEVICE_MAKEFILE}-userdebug"; do
+          for variant in "${DEVICE_MAKEFILE}-ap2a-eng" "${DEVICE_MAKEFILE}-bp2a-eng" "${DEVICE_MAKEFILE}-ap1a-eng" "${DEVICE_MAKEFILE}-eng" "${DEVICE_MAKEFILE}-userdebug"; do
             echo "==> Trying lunch $variant"
             TARGET_PRODUCT=""
             lunch "$variant"
