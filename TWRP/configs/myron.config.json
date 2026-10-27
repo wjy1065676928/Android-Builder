@@ -5,14 +5,14 @@
             "Branch": "twrp-16.0"
         },
         "Device": {
-            "Repo": "https://github.com/MissMyTime/twrp_device_sm8850",
+            "Repo": "https://github.com/haohao3001/OrangeFox-REDMI-K90ProMax-myron",
             "Branch": "main",
             "Location": "device/xiaomi/myron",
-            "SourceLocation": "device/xiaomi/myron",
+            "SourceLocation": ".",
             "DeviceName": "myron",
             "Makefile": "twrp_myron",
             "BootPartition": "recovery",
-            "PatchScript": "scripts/apply-patches.sh"
+            "PatchScript": ""
         }
     }
 ]

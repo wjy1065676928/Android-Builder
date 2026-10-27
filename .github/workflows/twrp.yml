@@ -117,7 +117,7 @@ jobs:
             cd "$WORKSPACE/of-sync"
             ./orangefox_sync.sh --branch "$OF_SYNC_BRANCH" --path "$SRC_ROOT"
           fi
-          df -h /
+          df -h "$SRC_ROOT" /
 
       - name: ♋ Place device trees and kernel
         run: |
@@ -146,6 +146,7 @@ jobs:
         working-directory: ${{ env.SRC_ROOT }}
         run: |
           set +e
+          df -h "$SRC_ROOT" || true
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export USE_CCACHE=1
