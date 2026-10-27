@@ -143,6 +143,7 @@ jobs:
             rsync -a --delete "$TREE_ROOT/$SRC_SUB/" "$SRC_ROOT/$DEVICE_LOCATION/"
             ls -l "$SRC_ROOT/$DEVICE_LOCATION" | head -30
           else
+            mkdir -p "$SRC_ROOT/$(dirname "$DEVICE_LOCATION")"
             git clone --recursive --depth=1 -j$(nproc) --branch "$DEVICE_BRANCH" \
               "$DEVICE_REPO" "$SRC_ROOT/$DEVICE_LOCATION"
           fi

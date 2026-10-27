@@ -1,18 +1,16 @@
 [
     {
-        "TWRP": {
-            "Manifest": "https://github.com/TWRP-Test/platform_manifest_twrp_aosp.git",
-            "Branch": "twrp-16.0"
+        "OrangeFox": {
+            "Repo": "https://gitlab.com/OrangeFox/sync.git",
+            "Branch": "14.1"
         },
         "Device": {
             "Repo": "https://github.com/haohao3001/OrangeFox-REDMI-K90ProMax-myron",
             "Branch": "main",
             "Location": "device/xiaomi/myron",
-            "SourceLocation": ".",
             "DeviceName": "myron",
             "Makefile": "twrp_myron",
-            "BootPartition": "recovery",
-            "PatchScript": ""
+            "BootPartition": "recovery"
         }
     }
 ]
