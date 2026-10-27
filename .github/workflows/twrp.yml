@@ -165,6 +165,23 @@ jobs:
       - name: ♍ Adapt device tree
         run: |
           DEVICE_DIR="$SRC_ROOT/$DEVICE_LOCATION"
+          if [ -f "$DEVICE_DIR/BoardConfig.mk" ]; then
+            cd "$DEVICE_DIR"
+            # AOSP16 的 sepolicy 属性按 board API 分支声明，例如：
+            #   public/attributes : starting_at_board_api(202504, `hal_attribute(hwcrypto);')
+            #   private/attributes: until_board_api(202504,    `hal_attribute(hwcrypto);')
+            # 该树写的是 BOARD_SHIPPING_API_LEVEL := 36（整数 SDK 形式），
+            # 落到两个分支之外，导致 hal_hwcrypto_server 未声明、vendor_sepolicy 编译失败。
+            # 与 TWRP-Test 的 sm8850 树保持一致，改用 YYYYMM 形式的 202504。
+            if grep -q '^BOARD_SHIPPING_API_LEVEL := 36' BoardConfig.mk; then
+              sed -i 's/^BOARD_SHIPPING_API_LEVEL := 36/BOARD_SHIPPING_API_LEVEL := 202504/' BoardConfig.mk
+              echo "[fix] BOARD_SHIPPING_API_LEVEL 36 -> 202504"
+            elif ! grep -q '^BOARD_SHIPPING_API_LEVEL' BoardConfig.mk; then
+              printf '\nBOARD_SHIPPING_API_LEVEL := 202504\n' >> BoardConfig.mk
+              echo "[fix] added BOARD_SHIPPING_API_LEVEL := 202504"
+            fi
+            grep -nE 'BOARD_SHIPPING_API_LEVEL' BoardConfig.mk || true
+          fi
           if [ -f "$DEVICE_DIR/device.mk" ]; then
             cd "$DEVICE_DIR"
             # AOSP16 的 prebuilts/module_sdk/CrashRecovery 要求 product 显式声明
