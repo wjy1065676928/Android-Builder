@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - ".github/workflows/twrp.yml"
+      - "TWRP/configs/*.config.json"
   workflow_dispatch:
-  schedule:
-    - cron: "14 13 * * 5"
+
+permissions:
+  contents: write
 
 jobs:
   Read-configuration:
@@ -16,11 +18,9 @@ jobs:
       CONFIGS: ${{ steps.generate-matrix.outputs.CONFIGS }}
       BUILD_DATE: ${{ steps.generate-builddate.outputs.BUILDDATE }}
     steps:
-      # This action checks-out your CONFIGSitory under $GITHUB_WORKSPACE, so your workflow can access it.
       - name: 🔴 Checkout
         uses: actions/checkout@v4
 
-      # Match the configuration files in the CONFIGS directory, read the contents and merge them into an array.
       - name: 🟠 Generate Matrix
         id: generate-matrix
         run: |
@@ -28,49 +28,53 @@ jobs:
           jq -s '[.[][]]' TWRP/configs/*.config.json >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # Set compile time.
       - name: 🟡 Set builddate
         id: generate-builddate
         run: echo "BUILDDATE=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
   Build-TWRP:
-    name: ©️ Build TWRP
+    name: ©️ Build ${{ matrix.CONFIG.Device.DeviceName }}
     runs-on: ubuntu-latest
     needs:
       - Read-configuration
     strategy:
-      max-parallel: 4
+      max-parallel: 2
       fail-fast: false
       matrix:
         CONFIG: ${{ fromJSON(needs.Read-configuration.outputs.CONFIGS) }}
     env:
-      # Basic configuration
       WORKSPACE: ${{ github.workspace }}
       BUILD_DATE: ${{ needs.Read-configuration.outputs.BUILD_DATE }}
 
-      # OrangeFox sync scripts configuration
-      OF_LOCATION: ${{ github.workspace }}/OrangeFox
+      # Source layout
+      SRC_ROOT: ${{ github.workspace }}/src
+      TREE_ROOT: ${{ github.workspace }}/device-tree
+      OUT_DIR: ${{ github.workspace }}/src/out
+      CCACHE_DIR: ${{ github.workspace }}/ccache
+
+      # TWRP manifest configuration (preferred when present)
+      TWRP_MANIFEST: ${{ matrix.CONFIG.TWRP.Manifest }}
+      TWRP_BRANCH: ${{ matrix.CONFIG.TWRP.Branch }}
+
+      # OrangeFox sync configuration (fallback)
       OF_SYNC_REPO: ${{ matrix.CONFIG.OrangeFox.Repo }}
       OF_SYNC_BRANCH: ${{ matrix.CONFIG.OrangeFox.Branch }}
 
-      # DeviceTree configuration
+      # Device tree configuration
       DEVICE_REPO: ${{ matrix.CONFIG.Device.Repo }}
       DEVICE_BRANCH: ${{ matrix.CONFIG.Device.Branch }}
       DEVICE_LOCATION: ${{ matrix.CONFIG.Device.Location }}
+      DEVICE_SOURCE_LOCATION: ${{ matrix.CONFIG.Device.SourceLocation }}
       DEVICE_NAME: ${{ matrix.CONFIG.Device.DeviceName }}
       DEVICE_MAKEFILE: ${{ matrix.CONFIG.Device.Makefile }}
       DEVICE_BOOT_PARTITION: ${{ matrix.CONFIG.Device.BootPartition }}
-
-      # Set output & ccache directory
-      OUT_DIR: "${{ github.workspace }}/out"
-      CCACHE_DIR: "${{ github.workspace }}/ccache"
+      DEVICE_PATCH_SCRIPT: ${{ matrix.CONFIG.Device.PatchScript }}
     steps:
-      # Clean up the workspace and make room for compilation
-      - name: ♈ Cleanup
+      - name: ♈ Maximize build space
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 512
-          swap-size-mb: 12288
+          swap-size-mb: 8192
           remove-dotnet: "true"
           remove-haskell: "true"
           remove-codeql: "true"
@@ -78,51 +82,125 @@ jobs:
 
       - name: ♉ Prepare the build environment
         run: |
-          cd ~
-          sudo apt update -y
-          sudo apt install git aria2 -y
-          git clone https://gitlab.com/OrangeFox/misc/scripts
-          cd scripts
-          sudo bash setup/android_build_env.sh
-          sed -i 's/cd -/cd ../g' setup/install_android_sdk.sh
-          sudo bash setup/install_android_sdk.sh
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            git-core gnupg flex bison build-essential zip unzip curl \
+            zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 \
+            libncurses-dev libx11-dev libgl1-mesa-dev libxml2-utils \
+            xsltproc fontconfig python3 python3-pip bc ccache rsync \
+            libssl-dev lz4 zstd || true
+          if ! command -v repo >/dev/null 2>&1; then
+            sudo curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+            sudo chmod a+x /usr/local/bin/repo
+          fi
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global --add safe.directory '*'
+          ccache -M 4G
+          repo --version | head -2
+          df -h /
 
-      - name: ♊ Sync OrangeFox sources and minimal manifest
+      - name: ♊ Sync source
         run: |
-          git clone ${{ env.OF_SYNC_REPO }} sync
-          cd sync
-          ./orangefox_sync.sh --branch ${{ env.OF_SYNC_BRANCH }} --path ${{ env.OF_LOCATION }}
+          mkdir -p "$SRC_ROOT"
+          cd "$SRC_ROOT"
+          if [ -n "$TWRP_MANIFEST" ]; then
+            echo "==> TWRP manifest: $TWRP_MANIFEST ($TWRP_BRANCH)"
+            repo init -u "$TWRP_MANIFEST" -b "$TWRP_BRANCH" --depth=1
+            (while true; do echo "Syncing source... $(df -h / | tail -1)"; sleep 120; done) &
+            TIP_PID=$!
+            repo sync -c --no-tags --no-clone-bundle --force-sync -j$(nproc)
+            kill $TIP_PID 2>/dev/null || true
+          else
+            echo "==> OrangeFox sync: $OF_SYNC_REPO ($OF_SYNC_BRANCH)"
+            git clone --depth=1 "$OF_SYNC_REPO" "$WORKSPACE/of-sync"
+            cd "$WORKSPACE/of-sync"
+            ./orangefox_sync.sh --branch "$OF_SYNC_BRANCH" --path "$SRC_ROOT"
+          fi
+          df -h /
 
       - name: ♋ Place device trees and kernel
-        working-directory: ${{ env.OF_LOCATION }}
         run: |
-          git clone --recursive --depth=1 -j $(nproc) --branch ${{ env.DEVICE_BRANCH }} ${{ env.DEVICE_REPO }} ${{ env.DEVICE_LOCATION }}
+          if [ -n "$TWRP_MANIFEST" ]; then
+            rm -rf "$TREE_ROOT"
+            git clone --depth=1 -b "$DEVICE_BRANCH" "$DEVICE_REPO" "$TREE_ROOT"
+            SRC_SUB="${DEVICE_SOURCE_LOCATION:-$DEVICE_LOCATION}"
+            mkdir -p "$SRC_ROOT/$DEVICE_LOCATION"
+            rsync -a --delete "$TREE_ROOT/$SRC_SUB/" "$SRC_ROOT/$DEVICE_LOCATION/"
+            ls -l "$SRC_ROOT/$DEVICE_LOCATION" | head -30
+          else
+            git clone --recursive --depth=1 -j$(nproc) --branch "$DEVICE_BRANCH" \
+              "$DEVICE_REPO" "$SRC_ROOT/$DEVICE_LOCATION"
+          fi
+
+      - name: ♌ Apply device patches
+        run: |
+          if [ -n "$DEVICE_PATCH_SCRIPT" ] && [ -f "$TREE_ROOT/$DEVICE_PATCH_SCRIPT" ]; then
+            cd "$SRC_ROOT"
+            bash "$TREE_ROOT/$DEVICE_PATCH_SCRIPT" "$SRC_ROOT" "$DEVICE_NAME"
+          else
+            echo "No patch script for $DEVICE_NAME, skipping."
+          fi
 
       - name: ♍ Build it
-        working-directory: ${{ env.OF_LOCATION }}
-        continue-on-error: true
+        working-directory: ${{ env.SRC_ROOT }}
         run: |
           set +e
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
-          set -e
-          lunch ${{ env.DEVICE_MAKEFILE }}-eng && mka adbd ${{ env.DEVICE_BOOT_PARTITION }}image
+          export USE_CCACHE=1
+          export CCACHE_EXEC=$(command -v ccache)
+          SELECTED=""
+          for variant in "${DEVICE_MAKEFILE}-eng" "${DEVICE_MAKEFILE}-bp2a-eng" "${DEVICE_MAKEFILE}-ap2a-eng" "${DEVICE_MAKEFILE}-userdebug"; do
+            echo "==> Trying lunch $variant"
+            TARGET_PRODUCT=""
+            lunch "$variant"
+            if [ -n "$TARGET_PRODUCT" ]; then
+              SELECTED="$variant"
+              echo "==> lunch OK: $SELECTED"
+              break
+            fi
+          done
+          if [ -z "$SELECTED" ]; then
+            echo "ERROR: no usable lunch target for $DEVICE_MAKEFILE"
+            exit 1
+          fi
+          (while true; do echo "$(date +%T) building ${DEVICE_BOOT_PARTITION}image..."; free -h | head -2; df -h / | tail -1; sleep 120; done) &
+          TIP_PID=$!
+          m ${DEVICE_BOOT_PARTITION}image
+          RET=$?
+          kill $TIP_PID 2>/dev/null
+          exit $RET
 
-      - name: ♎ Take the OrangeFox build
+      - name: ♎ Take the build
+        if: always()
+        run: |
+          OUT="$OUT_DIR/target/product/$DEVICE_NAME"
+          echo "==> Output: $OUT"
+          ls -lh "$OUT"/*.img 2>/dev/null || true
+          if [ -f "$OUT/recovery.img" ]; then
+            cp "$OUT/recovery.img" "$OUT/recovery-$DEVICE_NAME-$BUILD_DATE.img"
+            ls -lh "$OUT/recovery-$DEVICE_NAME-$BUILD_DATE.img"
+          fi
+          df -h / || true
+
+      - name: ♏ Upload artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: OrangeFox
+          name: recovery-${{ env.DEVICE_NAME }}-${{ env.BUILD_DATE }}
           if-no-files-found: warn
+          retention-days: 30
           path: |
-            ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/*${{ env.DEVICE_NAME }}.img
-            ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/*${{ env.DEVICE_NAME }}.zip
+            ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/recovery*.img
 
-      - name: ♏ Create GitHub Release => (${{ env.BUILD_DATE }})
+      - name: ♐ Create GitHub Release
+        if: success()
         continue-on-error: true
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.BUILD_DATE }}.${{ github.run_number }}
+          name: ${{ env.DEVICE_NAME }}-${{ env.BUILD_DATE }}
           files: |
-            ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/*${{ env.DEVICE_NAME }}.img
-            ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/*${{ env.DEVICE_NAME }}.zip
+            ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/recovery*.img
           generate_release_notes: true
