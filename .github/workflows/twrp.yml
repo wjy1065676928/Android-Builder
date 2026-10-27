@@ -70,15 +70,21 @@ jobs:
       DEVICE_BOOT_PARTITION: ${{ matrix.CONFIG.Device.BootPartition }}
       DEVICE_PATCH_SCRIPT: ${{ matrix.CONFIG.Device.PatchScript }}
     steps:
-      - name: ♈ Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 8192
-          remove-dotnet: "true"
-          remove-haskell: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
+      - name: ♈ Free disk space and add swap
+        run: |
+          # 不切 LVM build 卷：maximize-build-space 会把 root 压到只剩几百 KB，
+          # 导致 apt-get update 写 /var/lib/apt/lists 时报 No space left on device。
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          sudo apt-get clean || true
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile
+          sudo fallocate -l 6G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=6144 status=none
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile >/dev/null
+          sudo swapon /swapfile
+          free -h
+          df -h /
 
       - name: ♉ Prepare the build environment
         run: |
