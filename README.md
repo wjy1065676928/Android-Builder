@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./.assets/logo.svg" width="300" height="300" alt="banner">
+<img src="https://avatars.githubusercontent.com/u/100076963" width="300" height="300" alt="banner" style="border-radius: 50%">
 <h1>DogDay Buildbot</h1>
 
 ---
@@ -7,14 +7,17 @@
 English | [中文文档](./README.zh_CN.md)
 
 ![License](https://img.shields.io/static/v1?label=License&message=BY-NC-SA&logo=creativecommons&color=green)
-![Language](https://img.shields.io/github/languages/top/DogDayAndroid/Android-Builder)
-![Issues](https://img.shields.io/github/issues/DogDayAndroid/Android-Builder)
-![Pull Requests](https://img.shields.io/github/issues-pr/DogDayAndroid/Android-Builder)
-<br>
+![Language](https://img.shields.io/github/languages/top/UnicomAndroid/kerneler)
+![Issues](https://img.shields.io/github/issues/UnicomAndroid/kerneler)
+![Pull Requests](https://img.shields.io/github/issues-pr/UnicomAndroid/kerneler)
 
 ---
 
 </div>
+
+> ⚠️ **Project Status: Archived / No Longer Maintained**
+>
+> I have switched to **Pixel 9 Pro Fold**, which is powered by Google Tensor — a chip with full mainline kernel support. I no longer own a device that requires custom kernel compilation, so this repository will no longer be actively developed. The code and documentation remain available for reference.
 
 ## Preface
 
@@ -22,19 +25,19 @@ Unfortunately, I accidentally deleted the original repository on the night of **
 
 After learning from the experience, I decided to make the project more perfect and support more content. Currently, the content that this project will support is as follows:
 
-- You can enter the **[<kbd> <br/>  Kernel  <br/> </kbd>](./Kernel/)** directory in this repository to configure and build the kernel.
-- Clone this repository and enter **[<kbd> <br/>  System  <br/> </kbd>](./System/)** to develop and compile the system.
-- Entering the **[<kbd> <br/>  TWRP  <br/> </kbd>](./TWRP/)** folder of this project can help you quickly build TWRP.
+- You can enter the **[Kernel](./Kernel/)** directory in this repository to configure and build the kernel.
+- Clone this repository and enter **[System](./System/)** to develop and compile the system.
+- Entering the **[TWRP](./TWRP/)** folder of this project can help you quickly build TWRP.
 
 The specific content of each project will be displayed separately under each folder. You can enter these folders to view their individual readme files to learn how to use them.
 
 ## Contributor
 
-[![Contributor](https://contrib.rocks/image?repo=DogDayAndroid/Android-Builder)](https://github.com/DogDayAndroid/Android-Builder/graphs/contributors)
+[![Contributor](https://contrib.rocks/image?repo=UnicomAndroid/kerneler)](https://github.com/UnicomAndroid/kerneler/graphs/contributors)
 
 ## Star history
 
-[![Star History](https://starchart.cc/DogDayAndroid/Android-Builder.svg)](https://starchart.cc/DogDayAndroid/Android-Builder)
+[![Star History](https://starchart.cc/UnicomAndroid/kerneler.svg)](https://starchart.cc/UnicomAndroid/kerneler)
 
 ## License
 

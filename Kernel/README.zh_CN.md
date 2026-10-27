@@ -75,6 +75,14 @@ timeline
 
 本项目的基础使用方法如下：
 
+```mermaid
+flowchart LR
+    A[🍴 Fork 项目] --> B[✏️ 修改 config]
+    B --> C[▶️ 运行 Workflow]
+    C --> D[📥 下载编译产物]
+    D --> E[📦 打包刷入]
+```
+
 1. 在 GitHub 上 `fork` 本项目
 
 2. 通过 Github 网页或者拉取到本地修改 `config/*.config.json` 文件，并提交修改
@@ -83,13 +91,14 @@ timeline
 
 4. 等待编译完成，即可进入对应页面下载编译产物
 
-5. 使用您喜欢的打包软件进行内核打包([AnyKernel3](https://github.com/osm0sis/AnyKernel3)、[Android-Image-Kitchen](https://github.com/osm0sis/Android-Image-Kitchen)、[MagiskBoot](https://github.com/topjohnwu/Magisk/releases) 等，**目前本项目仅集成 AnyKernel3**)
+5. 使用您喜欢的打包软件进行内核打包（[AnyKernel3](https://github.com/osm0sis/AnyKernel3)、[Android-Image-Kitchen](https://github.com/osm0sis/Android-Image-Kitchen)、[MagiskBoot](https://github.com/topjohnwu/Magisk/releases) 等）
+   > **注意：** 目前本项目仅集成 AnyKernel3。
 
-![Artifacts](https://github.com/DogDayAndroid/Android-Builder/blob/main/.assets/artifacts.png?raw=true)
+![Artifacts](https://github.com/UnicomAndroid/kerneler/blob/main/.assets/artifacts.png?raw=true)
 
 ## 本地构建
 
-### 1. 本地运行 `Action`
+### 本地运行 `Action`
 
 如果您并不想在 `Github` 上重复执行 `Action`，您可以利用 [nektos/act](https://github.com/nektos/act) 来在本地环境里测试本构建流程并输出。
 
@@ -111,7 +120,7 @@ act --artifact-server-path /tmp/artifacts -v
 
 ## 常见问题
 
-### 1. GitHub release failed with status: `403`
+### GitHub release failed with status: `403`
 
 当您使用 `softprops/action-gh-release@v1` 发布 `Release` 时, 您可能会遇到如下报错:
 
@@ -134,7 +143,7 @@ Error: Too many retries.
 
 这是由于您的 `Workflow` 没有**读写权限**导致的:
 
-![workflow permissions](https://github.com/DogDayAndroid/Android-Builder/blob/main/.assets/FAQ/workflow%20permissions.png?raw=true)
+![workflow permissions](https://github.com/UnicomAndroid/kerneler/blob/main/.assets/FAQ/workflow%20permissions.png?raw=true)
 
 按照上图打开对应读写权限，随后重新运行 `Action` 就可以发布属于你自己的 `Release` 了
 

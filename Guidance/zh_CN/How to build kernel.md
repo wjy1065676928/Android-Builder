@@ -16,24 +16,27 @@ footer: \ *easterNday* *Build your own kernel* *2023年11月17日*
 ###### 利用 "Github Actions" 进行内核云编译
 
 @easterNday
-仓库地址：[https://github.com/DogDayAndroid/Android-Builder](https://github.com/DogDayAndroid/Android-Builde)
+仓库地址：[https://github.com/UnicomAndroid/kerneler](https://github.com/UnicomAndroid/kerneler)
 
 ##
 
-<!-- _header: 目录<br>CONTENTS<br>![](https://github.com/DogDayAndroid/Android-Builder/raw/main/.assets/logo.svg)-->
+<!-- _header: 目录<br>CONTENTS<br><img src="https://avatars.githubusercontent.com/u/100076963" style="border-radius: 50%" />-->
 <!-- _class: toc_b -->
 <!-- _footer: "" -->
 <!-- _paginate: "" -->
 
 - [什么是内核？](#3)
-- [如何获取到设备对应的内核源码？](#5)
-- [如何选取编译工具链？](#10)
-- [如何编译内核？](#16)
-- [如何将内核进行打包？](#23)
-- [如何利用 Github Action 完成内核编译？](#27)
-- [如何开启 KernelSU 支持？](#45)
-- [如何开启 Docker 支持？](#45)
-- [本项目参考了哪些项目？](#46)
+- [Android 启动流程](#5)
+- [如何获取到设备对应的内核源码？](#6)
+- [如何选取编译工具链？](#11)
+- [工具链选取决策树](#16)
+- [如何编译内核？](#18)
+- [本地编译流程概览](#20)
+- [如何将内核进行打包？](#26)
+- [如何利用 Github Action 完成内核编译？](#30)
+- [如何开启 KernelSU 支持？](#48)
+- [如何开启 Docker 支持？](#48)
+- [本项目参考了哪些项目？](#49)
 
 ## Android 内核简介
 
@@ -54,6 +57,22 @@ Android 设备的启动分为三个阶段：
 - **Android 系统服务:** 并执行 `init.rc` 通知 `Android` 启动。
 
 因此，`Android` 系统实际上是运行在 `Linux Kernel` 之上的一系列系统服务进程。
+
+## Android 启动流程
+
+<script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default'});</script>
+
+<div class="mermaid">
+flowchart LR
+    A[🔌 设备通电] --> B[Bootloader]
+    B --> C[Linux Kernel]
+    C --> D[Android 系统服务]
+
+    B -.->|片上 ROM 引导| B1[加载 Bootloader<br>初始化硬件]
+    C -.->|加载驱动| C1[挂载根文件系统<br>初始化软硬件环境]
+    D -.->|执行 init.rc| D1[启动系统服务进程]
+</div>
 
 ## 内核源码寻找
 
@@ -251,6 +270,19 @@ CAF 机型（除谷歌外的高通设备）：
 
 - 从 `Pixel2` 开始使用 `clang` 编译，`Pixel3` 开始使用 `clang` 的 `LTO` 优化
 
+## 工具链选取决策
+
+<div class="mermaid">
+flowchart TD
+    A[确定内核版本] --> B{内核版本?}
+    B -->|3.18 / 4.4 / 4.9| C{设备类型?}
+    B -->|4.14 及以上| D{设备类型?}
+    C -->|CAF 高通设备| E[仅使用 GCC 编译]
+    C -->|Google Pixel| F[使用 Clang 编译]
+    D -->|CAF 高通设备| G[Clang + GCC 混合编译]
+    D -->|Google Pixel| H[Clang + LTO 优化编译]
+</div>
+
 ## 交叉编译工具链的下载
 
 一般来说，我们可以通过第三方系统的仓库（例如：`LineageOS`、`PixelExperience`）或者 `Google` 官方拉取、下载我们需要的交叉编译工具链。
@@ -292,6 +324,22 @@ sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib g
 ```bash
 paru -S aosp-devel linageos-devel
 ```
+
+## 本地编译流程概览
+
+<div class="mermaid">
+flowchart TD
+    A[📦 克隆内核源码] --> B[🔍 检查 defconfig]
+    B --> C[⬇️ 下载编译工具链]
+    C --> D[⚙️ 配置环境变量]
+    D --> E[🔧 make defconfig]
+    E --> F[🏗️ make 编译]
+    F --> G{编译产物}
+    G -->|Image.gz-dtb| H[📦 AnyKernel3 打包]
+    G -->|Image + dtb| H
+    G -->|Image + dtbo.img| H
+    H --> I[📱 刷入设备]
+</div>
 
 ## 内核源码克隆
 
@@ -376,7 +424,7 @@ make ${args}
 
 其中 `ARCH=arm64` 是指定架构为 `arm64` 架构，其余参数作用均与上述表格中的内容对应。
 
-其中 `<copnfigName>` 是我们的 `defconfig` 文件，例如：
+其中 `<configName>` 是我们的 `defconfig` 文件，例如：
 
 - **小米 10S**对应的 `defconfig` 文件路径为 `arch/arm64/configs/thyme_defconfig`，此处便填写 `thyme_defconfig`;
 - 部分项目可能会位于 `arch/arm64/configs/vendor/thyme_defconfig`，此时应该填写 `vendor/thyme_defconfig`。
@@ -401,9 +449,9 @@ make ${args}
 
 - 对于一些内核源码，其编译产物可能是 `Image` + `独立的 dtb 文件 / dtbo.img` 的形式，如果是这两个文件也是可以的。
 
-## Anykernel3
+## AnyKernel3
 
-`Anykernel` 是一个最初由 `koush` 编写，后被 `osm0sis` 接手并多次迭代的内核刷写工具。
+`AnyKernel3` 是一个最初由 `koush` 编写，后被 `osm0sis` 接手并多次迭代的内核刷写工具。
 
 其项目地址为: [https://github.com/osm0sis/AnyKernel3](https://github.com/osm0sis/AnyKernel3)
 
@@ -425,7 +473,7 @@ sed -i 's/is_slot_device=0;/is_slot_device=auto;/g' AnyKernel3/anykernel.sh
 
 ```bash
 cd AnyKernel3/
-zip -q -r "AnyKnerl3.zip" *
+zip -q -r "AnyKernel3.zip" *
 ```
 
 打包完成后，我们就可以进入设备的 `TWRP` 将该压缩包刷入。
@@ -438,7 +486,7 @@ zip -q -r "AnyKnerl3.zip" *
 
 ## 项目地址
 
-[https://github.com/DogDayAndroid/Android-Builder](https://github.com/DogDayAndroid/Android-Builder)
+[https://github.com/UnicomAndroid/kerneler](https://github.com/UnicomAndroid/kerneler)
 
 目前，该项目将支持的内容如下：
 
@@ -465,8 +513,8 @@ zip -q -r "AnyKnerl3.zip" *
 ## 编译流程
 
 <!-- mermaid.js -->
-<script src="https://unpkg.com/mermaid@8.1.0/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true});</script>
+<script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default'});</script>
 
 <div class="mermaid">
 timeline

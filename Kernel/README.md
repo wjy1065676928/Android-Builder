@@ -75,6 +75,14 @@ Please see [Compile Configuration](./configs/) for specific configuration method
 
 The basic usage of this project is as follows:
 
+```mermaid
+flowchart LR
+    A[🍴 Fork 项目] --> B[✏️ 修改 config]
+    B --> C[▶️ Run Workflow]
+    C --> D[📥 下载产物]
+    D --> E[📦 打包刷入]
+```
+
 1. `fork` this project on GitHub
 
 2. Modify the `config/*.config.json` file through the Github web page or pull it locally, and submit the changes
@@ -83,17 +91,18 @@ The basic usage of this project is as follows:
 
 4. After the compilation is completed, you can enter the corresponding page to download the compiled product.
 
-5. Use your favorite packaging software for kernel packaging ([AnyKernel3](https://github.com/osm0sis/AnyKernel3), [Android-Image-Kitchen](https://github.com/osm0sis/Android-Image-Kitchen), [MagiskBoot](https://github.com/topjohnwu/Magisk/releases), etc. **Currently this project only integrates AnyKernel3**)
+5. Use your favorite packaging software for kernel packaging ([AnyKernel3](https://github.com/osm0sis/AnyKernel3), [Android-Image-Kitchen](https://github.com/osm0sis/Android-Image-Kitchen), [MagiskBoot](https://github.com/topjohnwu/Magisk/releases), etc.)
+   > **Note:** Currently this project only integrates AnyKernel3.
 
-![Artifacts](https://github.com/DogDayAndroid/Android-Builder/blob/main/.assets/artifacts.png?raw=true)
+![Artifacts](https://github.com/UnicomAndroid/kerneler/blob/main/.assets/artifacts.png?raw=true)
 
 ## Local build
 
-### 1. Run `Action` locally
+### Run `Action` locally
 
 If you don't want to repeatedly execute `Action` on `Github`, you can use [nektos/act](https://github.com/nektos/act) to test this build process and output it in the local environment.
 
-After installing [nektos/act](https://github.com/nektos/act) and execute the following instructions:
+After installing [nektos/act](https://github.com/nektos/act), execute the following instructions:
 
 ```sh
 # Collect build files into the /tmp/artifacts folder:
@@ -102,7 +111,7 @@ act --artifact-server-path /tmp/artifacts
 
 If you need to place it in a local location you like, please change `/tmp/artifacts` to your preferred directory.
 
-If an error is reported during the process, please add the parameter `-v` and re-execute to obtain the error report and submit an `issue`. The specific command is as follows:
+If an error is reported during the process, please add the parameter `-v` and re-execute to obtain the error report and submit an `issue`:
 
 ```sh
 # Collect build files into the /tmp/artifacts folder:
@@ -111,7 +120,7 @@ act --artifact-server-path /tmp/artifacts -v
 
 ## FAQ
 
-### 1. GitHub release failed with status: `403`
+### GitHub release failed with status: `403`
 
 When you use `softprops/action-gh-release@v1` to publish `Release`, you may encounter the following error:
 
@@ -134,7 +143,7 @@ Error: Too many retries.
 
 This is caused by your `Workflow` not having **read and write permission**:
 
-![workflow permissions](https://github.com/DogDayAndroid/Android-Builder/blob/main/.assets/FAQ/workflow%20permissions.png?raw=true)
+![workflow permissions](https://github.com/UnicomAndroid/kerneler/blob/main/.assets/FAQ/workflow%20permissions.png?raw=true)
 
 Open the corresponding read and write permissions as shown above, and then re-run `Action` to publish your own `Release`
 

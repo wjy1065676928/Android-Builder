@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./.assets/logo.svg" width="300" height="300" alt="banner">
+<img src="https://avatars.githubusercontent.com/u/100076963" width="300" height="300" alt="banner" style="border-radius: 50%">
 <h1>DogDay Buildbot</h1>
 
 ---
@@ -7,14 +7,17 @@
 [English](./README.md) | 中文文档
 
 ![License](https://img.shields.io/static/v1?label=许可证&message=BY-NC-SA&logo=creativecommons&color=green)
-![Language](https://img.shields.io/github/languages/top/DogDayAndroid/Android-Builder)
-![Issues](https://img.shields.io/github/issues/DogDayAndroid/Android-Builder)
-![Pull Requests](https://img.shields.io/github/issues-pr/DogDayAndroid/Android-Builder)
-<br>
+![Language](https://img.shields.io/github/languages/top/UnicomAndroid/kerneler)
+![Issues](https://img.shields.io/github/issues/UnicomAndroid/kerneler)
+![Pull Requests](https://img.shields.io/github/issues-pr/UnicomAndroid/kerneler)
 
 ---
 
 </div>
+
+> ⚠️ **项目状态：已归档 / 停止维护**
+>
+> 我已更换为 **Pixel 9 Pro Fold**，它搭载 Google Tensor 芯片，具备完整的主线内核支持。我不再拥有需要自定义内核编译的设备，因此本仓库将停止活跃开发。代码与文档仍保留供参考。
 
 ## 前言
 
@@ -22,19 +25,19 @@
 
 痛定思痛，我决定让项目更加完善，支持更多的内容。 目前，该项目将支持的内容如下：
 
-- 利用 `Github Actions` 来进行内核构建，这部分内容贮藏在 **[<kbd> <br/>  Kernel  <br/> </kbd>](./Kernel/)** 文件夹下。
-- 克隆本项目到本地后，您可以用脚本自动构建 `LineageOS`，这部分内容贮藏在 **[<kbd> <br/>  System  <br/> </kbd>](./System/)** 文件夹中。
-- 利用 `Github Actions` 来进行 `TWRP` 构建，这部分内容贮藏在 **[<kbd> <br/>  TWRP  <br/> </kbd>](./TWRP/)** 文件夹下。
+- 利用 `Github Actions` 来进行内核构建，这部分内容贮藏在 **[Kernel](./Kernel/)** 文件夹下。
+- 克隆本项目到本地后，您可以用脚本自动构建 `LineageOS`，这部分内容贮藏在 **[System](./System/)** 文件夹中。
+- 利用 `Github Actions` 来进行 `TWRP` 构建，这部分内容贮藏在 **[TWRP](./TWRP/)** 文件夹下。
 
 每个项目的具体内容会在每个文件夹下单独显示。 您可以进入这些文件夹查看其各自的自述文件以了解如何使用它们。
 
 ## 贡献者
 
-[![Contributor](https://contrib.rocks/image?repo=DogDayAndroid/Android-Builder)](https://github.com/DogDayAndroid/Android-Builder/graphs/contributors)
+[![Contributor](https://contrib.rocks/image?repo=UnicomAndroid/kerneler)](https://github.com/UnicomAndroid/kerneler/graphs/contributors)
 
 ## 星标历史
 
-[![Star History](https://starchart.cc/DogDayAndroid/Android-Builder.svg)](https://starchart.cc/DogDayAndroid/Android-Builder)
+[![Star History](https://starchart.cc/UnicomAndroid/kerneler.svg)](https://starchart.cc/UnicomAndroid/kerneler)
 
 ## 许可证
 
