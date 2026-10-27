@@ -79,7 +79,7 @@ jobs:
           sudo apt-get clean || true
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile
-          sudo fallocate -l 6G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=6144 status=none
+          sudo fallocate -l 8G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=none
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile >/dev/null
           sudo swapon /swapfile
@@ -172,11 +172,19 @@ jobs:
             echo "ERROR: no usable lunch target for $DEVICE_MAKEFILE"
             exit 1
           fi
-          (while true; do echo "$(date +%T) building ${DEVICE_BOOT_PARTITION}image..."; free -h | head -2; df -h / | tail -1; sleep 120; done) &
+          (while true; do echo "$(date +%T) building ${DEVICE_BOOT_PARTITION}image..."; free -h; df -h / | tail -1; sleep 120; done) &
           TIP_PID=$!
-          m ${DEVICE_BOOT_PARTITION}image
+          # 16GB runner 用默认并行度会在 ninja 阶段触发 OOM（runner 收到 terminated 信号后被回收），
+          # 限到 -j2 让峰值内存落在 16GB + 8GB swap 的安全区内。
+          m ${DEVICE_BOOT_PARTITION}image -j2
           RET=$?
           kill $TIP_PID 2>/dev/null
+          if [ $RET -ne 0 ]; then
+            echo "=== kernel OOM / shutdown messages ==="
+            sudo dmesg 2>/dev/null | tail -30 || true
+            free -h || true
+            df -h / || true
+          fi
           exit $RET
 
       - name: ♎ Take the build
