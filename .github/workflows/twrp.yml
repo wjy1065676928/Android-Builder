@@ -78,8 +78,9 @@ jobs:
           sudo apt-get clean || true
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile
-          # Android 14 底座的 soong 分析约 10G，4G swap 足够；留更多磁盘给 out
-          sudo fallocate -l 4G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096 status=none
+          # AOSP16 的 soong_build 加载全量模块图峰值 >24G，16G RAM 必须配大 swap；
+          # 磁盘靠后面的 Reclaim disk 步骤删 .repo/.git 腾出来
+          sudo fallocate -l 16G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=16384 status=none
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile >/dev/null
           sudo swapon /swapfile
@@ -149,7 +150,19 @@ jobs:
               "$DEVICE_REPO" "$SRC_ROOT/$DEVICE_LOCATION"
           fi
 
-      - name: ♌ Adapt device tree
+      - name: ♌ Reclaim disk (drop VCS metadata)
+        run: |
+          cd "$SRC_ROOT"
+          echo "free before: $(df -h / | awk 'NR==2{print $4}')"
+          du -sh .repo 2>/dev/null || true
+          # 编译只需要 worktree 里的文件，AOSP 官方也支持从 tarball（无 .git）构建。
+          # .repo 占 25-30G，删掉换给 swap 和 out。
+          rm -rf .repo
+          find . -name .git -prune -exec rm -rf {} + 2>/dev/null || true
+          echo "free after:  $(df -h / | awk 'NR==2{print $4}')"
+          df -h /
+
+      - name: ♍ Adapt device tree
         run: |
           DEVICE_DIR="$SRC_ROOT/$DEVICE_LOCATION"
           if [ -f "$DEVICE_DIR/device.mk" ]; then
@@ -175,7 +188,7 @@ jobs:
             echo "No patch script for $DEVICE_NAME, skipping."
           fi
 
-      - name: ♍ Build it
+      - name: ♎ Build it
         timeout-minutes: 300
         working-directory: ${{ env.SRC_ROOT }}
         run: |
@@ -215,7 +228,7 @@ jobs:
           fi
           exit $RET
 
-      - name: ♎ Take the build
+      - name: ♏ Take the build
         if: always()
         run: |
           OUT="$OUT_DIR/target/product/$DEVICE_NAME"
@@ -227,7 +240,7 @@ jobs:
           fi
           df -h / || true
 
-      - name: ♏ Upload artifact
+      - name: ♐ Upload artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -237,7 +250,7 @@ jobs:
           path: |
             ${{ env.OUT_DIR }}/target/product/${{ env.DEVICE_NAME }}/recovery*.img
 
-      - name: ♐ Create GitHub Release
+      - name: ♑ Create GitHub Release
         if: success()
         continue-on-error: true
         uses: softprops/action-gh-release@v2
