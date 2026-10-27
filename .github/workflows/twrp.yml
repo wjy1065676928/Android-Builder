@@ -50,7 +50,6 @@ jobs:
       SRC_ROOT: ${{ github.workspace }}/src
       TREE_ROOT: ${{ github.workspace }}/device-tree
       OUT_DIR: ${{ github.workspace }}/src/out
-      CCACHE_DIR: ${{ github.workspace }}/ccache
 
       # TWRP manifest configuration (preferred when present)
       TWRP_MANIFEST: ${{ matrix.CONFIG.TWRP.Manifest }}
@@ -102,7 +101,6 @@ jobs:
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           git config --global --add safe.directory '*'
-          ccache -M 4G
           repo --version | head -2
           df -h /
 
@@ -155,8 +153,6 @@ jobs:
           df -h "$SRC_ROOT" || true
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
-          export USE_CCACHE=1
-          export CCACHE_EXEC=$(command -v ccache)
           SELECTED=""
           for variant in "${DEVICE_MAKEFILE}-eng" "${DEVICE_MAKEFILE}-bp2a-eng" "${DEVICE_MAKEFILE}-ap2a-eng" "${DEVICE_MAKEFILE}-userdebug"; do
             echo "==> Trying lunch $variant"
