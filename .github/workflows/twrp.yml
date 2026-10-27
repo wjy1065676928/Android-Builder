@@ -186,7 +186,7 @@ jobs:
           fi
 
       - name: ♎ Build it
-        timeout-minutes: 300
+        timeout-minutes: 330
         working-directory: ${{ env.SRC_ROOT }}
         run: |
           set +e
@@ -195,6 +195,10 @@ jobs:
           sudo sysctl -w vm.swappiness=100 >/dev/null 2>&1 || true
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
+          # TWRP-Test 改过 frameworks/native 等系统库，libbinder_ndk 等模块的 ABI
+          # 与 prebuilts/abi-dumps 里的官方 dump 不符，会触发 header-abi-diff 失败。
+          # AOSP 官方提供该开关跳过 ABI 兼容性校验。
+          export SKIP_ABI_CHECKS=true
           SELECTED=""
           for variant in "${DEVICE_MAKEFILE}-ap2a-eng" "${DEVICE_MAKEFILE}-bp2a-eng" "${DEVICE_MAKEFILE}-ap1a-eng" "${DEVICE_MAKEFILE}-eng" "${DEVICE_MAKEFILE}-userdebug"; do
             echo "==> Trying lunch $variant"
@@ -213,8 +217,9 @@ jobs:
           (while true; do echo "$(date +%T) building ${DEVICE_BOOT_PARTITION}image..."; free -h; df -h / | tail -1; sleep 120; done) &
           TIP_PID=$!
           # 16GB runner 用默认并行度会在 ninja 阶段触发 OOM（runner 收到 terminated 信号后被回收），
-          # 限到 -j2 让峰值内存落在 16GB + 8GB swap 的安全区内。
-          m ${DEVICE_BOOT_PARTITION}image -j2
+          # 但 soong 分析过后内存会释放大半（实测 swap 仅用 742Mi），-j4 可用。
+          # -j2 时实测约 100 目标/分钟，25273 个目标会贴近 6 小时上限，-j4 留出余量。
+          m ${DEVICE_BOOT_PARTITION}image -j4
           RET=$?
           kill $TIP_PID 2>/dev/null
           if [ $RET -ne 0 ]; then
