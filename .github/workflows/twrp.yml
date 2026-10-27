@@ -182,6 +182,18 @@ jobs:
             fi
             grep -nE 'BOARD_SHIPPING_API_LEVEL' BoardConfig.mk || true
           fi
+          # TWRP-Test 新增的 vendor/hal_hwcrypto_default.te 依赖 hal_hwcrypto_client/server 属性，
+          # 而这两个属性由 hal_attribute(hwcrypto) 在 public/private attributes 中按 board API
+          # 分支声明（starting_at/until 202504 互斥），当前 ap2a release 下两处都没展开。
+          # recovery 不跑 hwcrypto HAL，注释掉相关 binder 策略即可，保留域与 allow 规则。
+          HWC="$SRC_ROOT/system/sepolicy/vendor/hal_hwcrypto_default.te"
+          if [ -f "$HWC" ]; then
+            sed -i -E 's|^(binder_call\(hal_hwcrypto_client, hal_hwcrypto_server\);)|# \1|' "$HWC"
+            sed -i -E 's|^(hal_attribute_service\(hal_hwcrypto, hal_hwcrypto_service\);)|# \1|' "$HWC"
+            sed -i -E 's|^(binder_use\(hal_hwcrypto_server\);)|# \1|' "$HWC"
+            echo "[fix] relaxed hal_hwcrypto_default.te binder policy"
+            tail -5 "$HWC"
+          fi
           if [ -f "$DEVICE_DIR/device.mk" ]; then
             cd "$DEVICE_DIR"
             # AOSP16 的 prebuilts/module_sdk/CrashRecovery 要求 product 显式声明
