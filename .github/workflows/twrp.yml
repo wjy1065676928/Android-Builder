@@ -78,7 +78,7 @@ jobs:
           sudo apt-get clean || true
           sudo swapoff /swapfile 2>/dev/null || true
           sudo rm -f /swapfile
-          sudo fallocate -l 6G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=6144 status=none
+          sudo fallocate -l 8G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192 status=none
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile >/dev/null
           sudo swapon /swapfile
@@ -162,6 +162,8 @@ jobs:
         run: |
           set +e
           df -h "$SRC_ROOT" || true
+          # 内存吃紧时更积极地换出，降低 OOM killer 直接杀进程的概率
+          sudo sysctl -w vm.swappiness=100 >/dev/null 2>&1 || true
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           SELECTED=""
