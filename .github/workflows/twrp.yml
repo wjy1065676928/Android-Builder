@@ -125,7 +125,9 @@ jobs:
             repo init -u "$TWRP_MANIFEST" -b "$TWRP_BRANCH" --depth=1
             (while true; do echo "Syncing source... $(df -h / | tail -1)"; sleep 120; done) &
             TIP_PID=$!
-            repo sync -c --no-tags --no-clone-bundle --force-sync -j$(nproc)
+            # sync 是网络 IO 密集型，并发数与 CPU 核数无关；
+            # 4 并发需要 20 分钟，拉到 16 可显著缩短，减少免费 runner 被抢占的窗口。
+            repo sync -c --no-tags --no-clone-bundle --force-sync -j16
             kill $TIP_PID 2>/dev/null || true
           else
             echo "==> OrangeFox sync: $OF_SYNC_REPO ($OF_SYNC_BRANCH)"
